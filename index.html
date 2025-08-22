@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplikasi Absensi Siswa Linjur</title>
+    <!-- Memuat Tailwind CSS untuk styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Memuat ikon dari Lucide Icons -->
+    <script src="https://unpkg.com/lucide-icons"></script>
+    <!-- Gaya kustom untuk aplikasi -->
+    <style>
+        /* Menggunakan font Inter dari Google Fonts */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Style untuk canvas tanda tangan agar responsif */
+        #signature-pad {
+            touch-action: none;
+            width: 100%;
+            height: 200px;
+            border-radius: 0.5rem;
+            border: 2px dashed #cbd5e1;
+            cursor: crosshair;
+        }
+
+        /* Menyembunyikan scrollbar di beberapa browser */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-100 text-slate-800">
+
+    <!-- Kontainer Utama Aplikasi -->
+    <div id="app" class="min-h-screen flex flex-col items-center justify-center p-4">
+
+        <!-- ===== HALAMAN LOGIN ===== -->
+        <div id="login-view" class="w-full max-w-sm">
+            <div class="bg-white p-8 rounded-xl shadow-lg text-center">
+                <h1 class="text-2xl font-bold mb-2 text-slate-700">Selamat Datang</h1>
+                <p class="text-slate-500 mb-6">Linjur RPL | Desain</p>
+                <form id="login-form">
+                    <div class="mb-4">
+                        <input type="text" id="username" placeholder="Nama Siswa"
+                            class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            required autocomplete="username">
+                    </div>
+                    <div class="mb-6">
+                        <input type="password" id="password" placeholder="Password"
+                            class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            required autocomplete="current-password">
+                    </div>
+                    <button type="submit"
+                        class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors duration-300 shadow-md">Login</button>
+                </form>
+                <p id="login-error" class="text-red-500 mt-4 text-sm hidden">Password salah. Coba lagi.</p>
+            </div>
+        </div>
+
+        <!-- ===== HALAMAN UTAMA APLIKASI (Setelah Login) ===== -->
+        <div id="main-view" class="w-full max-w-4xl hidden">
+            <!-- Header Aplikasi -->
+            <header class="bg-white p-4 rounded-xl shadow-lg mb-6 flex justify-between items-center">
+                <div>
+                    <h1 class="text-xl md:text-2xl font-bold text-slate-700">Formulir Absensi</h1>
+                    <p class="text-sm text-slate-500">Selamat datang, <span id="display-username"
+                            class="font-semibold"></span>!</p>
+                </div>
+                <button id="logout-button"
+                    class="flex items-center gap-2 bg-red-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-red-600 transition-colors duration-300 text-sm">
+                    <i data-lucide="log-out" class="w-4 h-4"></i>
+                    <span>Logout</span>
+                </button>
+            </header>
+
+            <!-- Konten Utama: Form dan Tabel -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Kolom Kiri: Formulir Absensi -->
+                <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <form id="attendance-form" class="space-y-4">
+                        <!-- Input Nama -->
+                        <div>
+                            <label for="nama" class="block text-sm font-medium text-slate-600 mb-1">Nama Lengkap</label>
+                            <input type="text" id="nama"
+                                class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                required>
+                        </div>
+
+                        <!-- Pilihan Kelas -->
+                        <div>
+                            <label for="kelas" class="block text-sm font-medium text-slate-600 mb-1">Kelas</label>
+                            <select id="kelas"
+                                class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                required>
+                                <option value="" disabled selected>Pilih Kelas</option>
+                                <option value="XI RPL 1">XI RPL 1</option>
+                                <option value="XI RPL 2">XI RPL 2</option>
+                                <option value="XI RPL 3">XI RPL 3</option>
+                                <option value="XI TKJ 1">XI TKJ 1</option>
+                                <option value="XI TKJ 2">XI TKJ 2</option>
+                                <option value="XI TKJ 3">XI TKJ 3</option>
+                            </select>
+                        </div>
+
+                        <!-- Unggah Foto -->
+                        <div>
+                            <label for="foto" class="block text-sm font-medium text-slate-600 mb-1">Foto Diri</label>
+                            <input type="file" id="foto" accept="image/*"
+                                class="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                                required>
+                        </div>
+
+                        <!-- Tanda Tangan -->
+                        <div>
+                            <label class="block text-sm font-medium text-slate-600 mb-1">Tanda Tangan</p>
+                                <div class="relative">
+                                    <canvas id="signature-pad"></canvas>
+                                    <button type="button" id="clear-signature"
+                                        class="absolute top-2 right-2 p-1 bg-slate-200 rounded-full hover:bg-slate-300">
+                                        <i data-lucide="trash-2" class="w-4 h-4 text-slate-600"></i>
+                                    </button>
+                                </div>
+                        </div>
+
+                        <!-- Tombol Submit -->
+                        <button type="submit" id="submit-button"
+                            class="w-full flex justify-center items-center gap-2 bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors duration-300 shadow-md">
+                            <i data-lucide="send" class="w-5 h-5"></i>
+                            <span>Kirim Absensi</span>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Kolom Kanan: Data Absensi -->
+                <div class="bg-white p-6 rounded-xl shadow-lg flex flex-col">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-lg font-bold text-slate-700">Data Absensi Hari Ini</h2>
+                        <button id="export-excel"
+                            class="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-green-700 transition-colors duration-300 text-sm">
+                            <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+                            <span>Unduh Excel</span>
+                        </button>
+                    </div>
+                    <!-- Kontainer Tabel agar bisa di-scroll -->
+                    <div class="flex-grow overflow-auto no-scrollbar border border-slate-200 rounded-lg">
+                        <table class="w-full min-w-[600px] text-sm text-left">
+                            <thead class="bg-slate-50 sticky top-0">
+                                <tr>
+                                    <th class="p-3 font-semibold text-slate-600">Nama</th>
+                                    <th class="p-3 font-semibold text-slate-600">Kelas</th>
+                                    <th class="p-3 font-semibold text-slate-600">Foto</th>
+                                    <th class="p-3 font-semibold text-slate-600">Tanda Tangan</th>
+                                    <th class="p-3 font-semibold text-slate-600">Waktu</th>
+                                </tr>
+                            </thead>
+                            <tbody id="attendance-table-body" class="divide-y divide-slate-200">
+                                <!-- Data akan dimuat di sini oleh JavaScript -->
+                                <tr>
+                                    <td colspan="5" class="p-4 text-center text-slate-500">Memuat data...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== FOOTER ===== -->
+    <footer class="text-center pb-6 text-sm text-slate-500">
+        <p>Pojok.Com | Konsultan IT & Service, Jual Laptop & HP</p>
+    </footer>
+
+    <!-- Modal Notifikasi -->
+    <div id="notification-modal"
+        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-white rounded-xl shadow-lg p-6 text-center max-w-sm w-full">
+            <div id="modal-icon" class="mx-auto mb-4 w-16 h-16 flex items-center justify-center rounded-full">
+                <!-- Icon will be inserted here -->
+            </div>
+            <h3 id="modal-title" class="text-lg font-bold mb-2"></h3>
+            <p id="modal-message" class="text-slate-600 mb-6"></p>
+            <button id="modal-close-button"
+                class="w-full bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700">Tutup</button>
+        </div>
+    </div>
+
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        // Impor fungsi yang diperlukan dari Firebase SDK
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+        // ===== KONFIGURASI FIREBASE =====
+        // Konfigurasi dari proyek Firebase Anda.
+        const firebaseConfig = {
+            apiKey: "AIzaSyAtosr3Dq3rX0alC7i40lgS63nJkNTgTqM",
+            authDomain: "aplikasiabsensisiswa.firebaseapp.com",
+            projectId: "aplikasiabsensisiswa",
+            storageBucket: "aplikasiabsensisiswa.appspot.com",
+            messagingSenderId: "924583646437",
+            appId: "1:924583646437:web:a028a407c408801cc5300c",
+            measurementId: "G-MMEPVSN07T"
+        };
+
+        // Ganti 'default-absensi-app' dengan nama unik jika Anda mau
+        const appId = 'aplikasi-absensi-siswa-smk';
+
+        // Inisialisasi Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        // ===== VARIABEL GLOBAL & ELEMENT DOM =====
+        const loginView = document.getElementById('login-view');
+        const mainView = document.getElementById('main-view');
+        const loginForm = document.getElementById('login-form');
+        const usernameInput = document.getElementById('username');
+        const passwordInput = document.getElementById('password');
+        const loginError = document.getElementById('login-error');
+        const displayUsername = document.getElementById('display-username');
+        const logoutButton = document.getElementById('logout-button');
+        const attendanceForm = document.getElementById('attendance-form');
+        const attendanceTableBody = document.getElementById('attendance-table-body');
+        const exportExcelButton = document.getElementById('export-excel');
+        const submitButton = document.getElementById('submit-button');
+
+        // Variabel untuk canvas tanda tangan
+        const canvas = document.getElementById('signature-pad');
+        const ctx = canvas.getContext('2d');
+        let isDrawing = false;
+        let lastX = 0;
+        let lastY = 0;
+
+        // ===== FUNGSI OTENTIKASI & LOGIN =====
+        async function setupAuth() {
+            try {
+                // Untuk aplikasi publik ini, kita gunakan login anonim
+                await signInAnonymously(auth);
+                console.log("Firebase Auth berhasil disiapkan (anonim).");
+            } catch (error) {
+                console.error("Error saat otentikasi Firebase:", error);
+                showNotification('error', 'Gagal Terhubung', 'Tidak dapat terhubung ke server. Silakan muat ulang halaman.');
+            }
+        }
+
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const username = usernameInput.value.trim();
+            const password = passwordInput.value;
+
+            // Validasi login
+            if (password === 'linjur2025' && username) {
+                // Simpan username di session storage agar tidak hilang saat refresh
+                sessionStorage.setItem('loggedInUser', username);
+                showMainApp(username);
+            } else {
+                loginError.classList.remove('hidden');
+            }
+        });
+
+        logoutButton.addEventListener('click', () => {
+            sessionStorage.removeItem('loggedInUser');
+            loginView.classList.remove('hidden');
+            mainView.classList.add('hidden');
+            loginForm.reset();
+            loginError.classList.add('hidden');
+        });
+
+        function showMainApp(username) {
+            loginView.classList.add('hidden');
+            mainView.classList.remove('hidden');
+            displayUsername.textContent = username;
+            document.getElementById('nama').value = username; // Otomatis isi nama dari login
+            fetchAttendanceData();
+        }
+
+        // Cek jika user sudah login sebelumnya di sesi ini
+        function checkLoginStatus() {
+            const loggedInUser = sessionStorage.getItem('loggedInUser');
+            if (loggedInUser) {
+                showMainApp(loggedInUser);
+            }
+        }
+
+        // ===== LOGIKA TANDA TANGAN (SIGNATURE PAD) =====
+        function resizeCanvas() {
+            const ratio = Math.max(window.devicePixelRatio || 1, 1);
+            canvas.width = canvas.offsetWidth * ratio;
+            canvas.height = canvas.offsetHeight * ratio;
+            canvas.getContext('2d').scale(ratio, ratio);
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            e.preventDefault(); // Mencegah scroll di mobile saat menggambar
+
+            const rect = canvas.getBoundingClientRect();
+            const x = (e.clientX || e.touches[0].clientX) - rect.left;
+            const y = (e.clientY || e.touches[0].clientY) - rect.top;
+
+            ctx.strokeStyle = '#334155'; // Warna tinta
+            ctx.lineWidth = 2;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            ctx.beginPath();
+            ctx.moveTo(lastX, lastY);
+            ctx.lineTo(x, y);
+            ctx.stroke();
+
+            [lastX, lastY] = [x, y];
+        }
+
+        canvas.addEventListener('mousedown', (e) => {
+            isDrawing = true;
+            const rect = canvas.getBoundingClientRect();
+            [lastX, lastY] = [e.clientX - rect.left, e.clientY - rect.top];
+        });
+
+        canvas.addEventListener('touchstart', (e) => {
+            isDrawing = true;
+            const rect = canvas.getBoundingClientRect();
+            [lastX, lastY] = [e.touches[0].clientX - rect.left, e.touches[0].clientY - rect.top];
+        });
+
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('touchmove', draw);
+
+        canvas.addEventListener('mouseup', () => isDrawing = false);
+        canvas.addEventListener('mouseout', () => isDrawing = false);
+        canvas.addEventListener('touchend', () => isDrawing = false);
+
+        document.getElementById('clear-signature').addEventListener('click', clearSignature);
+
+        function clearSignature() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function isCanvasEmpty() {
+            const pixelBuffer = new Uint32Array(ctx.getImageData(0, 0, canvas.width, canvas.height).data.buffer);
+            return !pixelBuffer.some(color => color !== 0);
+        }
+
+        // ===== FUNGSI UTAMA APLIKASI =====
+
+        // Fungsi untuk mengubah file gambar menjadi Base64
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+            });
+        }
+
+        // Event listener untuk submit form
+        attendanceForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            // Mengambil data dari form
+            const nama = document.getElementById('nama').value;
+            const kelas = document.getElementById('kelas').value;
+            const fotoFile = document.getElementById('foto').files[0];
+
+            // Validasi
+            if (!nama || !kelas || !fotoFile || isCanvasEmpty()) {
+                showNotification('error', 'Data Tidak Lengkap', 'Mohon isi semua field, termasuk foto dan tanda tangan.');
+                return;
+            }
+
+            setSubmitButtonLoading(true);
+
+            try {
+                // Konversi foto dan tanda tangan ke Base64
+                const fotoBase64 = await fileToBase64(fotoFile);
+                const ttdBase64 = canvas.toDataURL('image/png');
+
+                // Membuat objek data untuk disimpan
+                const attendanceData = {
+                    nama: nama,
+                    kelas: kelas,
+                    foto: fotoBase64,
+                    tandaTangan: ttdBase64,
+                    waktu: new Date() // Simpan sebagai objek Date
+                };
+
+                // Simpan data ke Firestore. Path disesuaikan dengan aturan keamanan.
+                const docRef = await addDoc(collection(db, `artifacts/${appId}/public/data/absensi`), attendanceData);
+                console.log("Dokumen berhasil ditulis dengan ID: ", docRef.id);
+
+                showNotification('success', 'Absensi Berhasil', 'Data Anda telah berhasil disimpan.');
+
+                // Reset form setelah berhasil
+                attendanceForm.reset();
+                clearSignature();
+
+            } catch (error) {
+                console.error("Error saat menambahkan dokumen: ", error);
+                showNotification('error', 'Terjadi Kesalahan', 'Gagal menyimpan data. Silakan coba lagi.');
+            } finally {
+                setSubmitButtonLoading(false);
+            }
+        });
+
+        // Mengambil dan menampilkan data absensi secara real-time
+        function fetchAttendanceData() {
+            const q = query(collection(db, `artifacts/${appId}/public/data/absensi`));
+
+            onSnapshot(q, (querySnapshot) => {
+                attendanceTableBody.innerHTML = ''; // Kosongkan tabel
+                const attendances = [];
+                querySnapshot.forEach((doc) => {
+                    attendances.push({ id: doc.id, ...doc.data() });
+                });
+
+                // Urutkan data dari yang terbaru
+                attendances.sort((a, b) => b.waktu.toDate() - a.waktu.toDate());
+
+                if (attendances.length === 0) {
+                    attendanceTableBody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500">Belum ada data absensi.</td></tr>`;
+                    return;
+                }
+
+                attendances.forEach(data => {
+                    const row = document.createElement('tr');
+
+                    // Format waktu agar mudah dibaca
+                    const timestamp = data.waktu.toDate();
+                    const formattedTime = timestamp.toLocaleTimeString('id-ID', {
+                        hour: '2-digit', minute: '2-digit', second: '2-digit'
+                    });
+
+                    row.innerHTML = `
+                        <td class="p-3 align-top">${data.nama}</td>
+                        <td class="p-3 align-top">${data.kelas}</td>
+                        <td class="p-3 align-top">
+                            <img src="${data.foto}" alt="Foto ${data.nama}" class="w-16 h-16 object-cover rounded-md">
+                        </td>
+                        <td class="p-3 align-top">
+                            <img src="${data.tandaTangan}" alt="TTD" class="h-12 bg-slate-100 p-1 rounded-md">
+                        </td>
+                        <td class="p-3 align-top text-slate-600">${formattedTime}</td>
+                    `;
+                    attendanceTableBody.appendChild(row);
+                });
+            });
+        }
+
+        // Fungsi untuk mengunduh data sebagai file CSV (Excel)
+        exportExcelButton.addEventListener('click', async () => {
+            try {
+                const q = query(collection(db, `artifacts/${appId}/public/data/absensi`));
+                const querySnapshot = await getDocs(q);
+
+                let dataToExport = [];
+                querySnapshot.forEach((doc) => {
+                    dataToExport.push(doc.data());
+                });
+
+                if (dataToExport.length === 0) {
+                    showNotification('info', 'Data Kosong', 'Tidak ada data absensi untuk diunduh.');
+                    return;
+                }
+
+                // Urutkan data dari yang terbaru
+                dataToExport.sort((a, b) => b.waktu.toDate() - a.waktu.toDate());
+
+                // Header untuk file CSV
+                let csvContent = "data:text/csv;charset=utf-8,";
+                csvContent += "Nama,Kelas,Tanggal,Waktu\n";
+
+                // Menambahkan setiap baris data
+                dataToExport.forEach(item => {
+                    const timestamp = item.waktu.toDate();
+                    const date = timestamp.toLocaleDateString('id-ID');
+                    const time = timestamp.toLocaleTimeString('id-ID');
+                    // Menghindari koma dalam nama yang bisa merusak format CSV
+                    const sanitizedNama = `"${item.nama.replace(/"/g, '""')}"`;
+                    csvContent += `${sanitizedNama},${item.kelas},${date},${time}\n`;
+                });
+
+                // Membuat link download dan memicunya
+                const encodedUri = encodeURI(csvContent);
+                const link = document.createElement("a");
+                link.setAttribute("href", encodedUri);
+                const today = new Date().toISOString().slice(0, 10);
+                link.setAttribute("download", `absensi_siswa_${today}.csv`);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+
+            } catch (error) {
+                console.error("Gagal mengunduh data:", error);
+                showNotification('error', 'Gagal Mengunduh', 'Terjadi kesalahan saat menyiapkan file Excel.');
+            }
+        });
+
+        // ===== FUNGSI BANTUAN (HELPERS) =====
+
+        // Fungsi untuk menampilkan notifikasi modal
+        function showNotification(type, title, message) {
+            const modal = document.getElementById('notification-modal');
+            const iconContainer = document.getElementById('modal-icon');
+            const modalTitle = document.getElementById('modal-title');
+            const modalMessage = document.getElementById('modal-message');
+            const closeButton = document.getElementById('modal-close-button');
+
+            modalTitle.textContent = title;
+            modalMessage.textContent = message;
+
+            iconContainer.innerHTML = ''; // Clear previous icon
+            let icon, bgColor, textColor;
+
+            switch (type) {
+                case 'success':
+                    icon = 'check';
+                    bgColor = 'bg-green-100';
+                    textColor = 'text-green-600';
+                    break;
+                case 'error':
+                    icon = 'alert-triangle';
+                    bgColor = 'bg-red-100';
+                    textColor = 'text-red-600';
+                    break;
+                default:
+                    icon = 'info';
+                    bgColor = 'bg-blue-100';
+                    textColor = 'text-blue-600';
+            }
+
+            iconContainer.classList.add(bgColor, textColor);
+            iconContainer.innerHTML = `<i data-lucide="${icon}" class="w-8 h-8"></i>`;
+            lucide.createIcons(); // Re-render icon
+
+            modal.classList.remove('hidden');
+
+            closeButton.onclick = () => {
+                modal.classList.add('hidden');
+                iconContainer.classList.remove(bgColor, textColor);
+            };
+        }
+
+        // Fungsi untuk mengubah tampilan tombol submit saat loading
+        function setSubmitButtonLoading(isLoading) {
+            const span = submitButton.querySelector('span');
+            const icon = submitButton.querySelector('i');
+            if (isLoading) {
+                submitButton.disabled = true;
+                submitButton.classList.add('bg-blue-400', 'cursor-not-allowed');
+                span.textContent = 'Mengirim...';
+                icon.setAttribute('data-lucide', 'loader-2');
+                icon.classList.add('animate-spin');
+            } else {
+                submitButton.disabled = false;
+                submitButton.classList.remove('bg-blue-400', 'cursor-not-allowed');
+                span.textContent = 'Kirim Absensi';
+                icon.setAttribute('data-lucide', 'send');
+                icon.classList.remove('animate-spin');
+            }
+            lucide.createIcons();
+        }
+
+
+        // ===== INISIALISASI APLIKASI =====
+        window.onload = () => {
+            lucide.createIcons(); // Render semua ikon saat halaman dimuat
+            resizeCanvas(); // Sesuaikan ukuran canvas
+            window.addEventListener('resize', resizeCanvas);
+            setupAuth(); // Siapkan otentikasi Firebase
+            checkLoginStatus(); // Cek status login saat halaman dimuat
+        };
+
+    </script>
+</body>
+
+</html>
